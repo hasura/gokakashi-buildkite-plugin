@@ -1,0 +1,36 @@
+name: GoKakashi Scan
+description: A Buildkite plugin to trigger and fetch image scans using goKakashi CLI
+author: "goKakashi Team"
+requirements:
+  - docker
+configuration:
+  properties:
+    image:
+      type: string
+    labels:
+      type: string
+    policy:
+      type: string
+    server:
+      type: string
+    token:
+      type: string
+    cf_client_id:
+      type: string
+    cf_client_secret:
+      type: string
+    scan_id:
+      type: string
+    interval:
+      type: [string, integer]
+      default: 10
+    retries:
+      type: [string, integer]
+      default: 10
+    gokakashi_version:
+      type: string
+      default: "latest"
+  required:
+    - server
+    - token
+  additionalProperties: false

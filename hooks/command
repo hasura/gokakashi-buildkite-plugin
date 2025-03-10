@@ -1,0 +1,155 @@
+#!/bin/bash
+set -euo pipefail
+
+# Get configuration from environment
+IMAGE="${BUILDKITE_PLUGIN_GOKAKASHI_SCAN_IMAGE:-}"
+LABELS="${BUILDKITE_PLUGIN_GOKAKASHI_SCAN_LABELS:-}"
+POLICY="${BUILDKITE_PLUGIN_GOKAKASHI_SCAN_POLICY:-}"
+SERVER="${BUILDKITE_PLUGIN_GOKAKASHI_SCAN_SERVER:-}"
+TOKEN="${BUILDKITE_PLUGIN_GOKAKASHI_SCAN_TOKEN:-}"
+CF_CLIENT_ID="${BUILDKITE_PLUGIN_GOKAKASHI_SCAN_CF_CLIENT_ID:-}"
+CF_CLIENT_SECRET="${BUILDKITE_PLUGIN_GOKAKASHI_SCAN_CF_CLIENT_SECRET:-}"
+SCAN_ID="${BUILDKITE_PLUGIN_GOKAKASHI_SCAN_SCAN_ID:-}"
+INTERVAL="${BUILDKITE_PLUGIN_GOKAKASHI_SCAN_INTERVAL:-10}"
+RETRIES="${BUILDKITE_PLUGIN_GOKAKASHI_SCAN_RETRIES:-10}"
+GOKAKASHI_VERSION="${BUILDKITE_PLUGIN_GOKAKASHI_SCAN_GOKAKASHI_VERSION:-latest}"
+
+# Validation for required parameters
+if [[ -z "$SERVER" ]]; then
+  echo "Error: 'server' parameter is required"
+  exit 1
+fi
+
+if [[ -z "$TOKEN" ]]; then
+  echo "Error: 'token' parameter is required"
+  exit 1
+fi
+
+# Image or scan_id is required
+if [[ -z "$IMAGE" && -z "$SCAN_ID" ]]; then
+  echo "Error: Either 'image' or 'scan_id' parameter is required"
+  exit 1
+fi
+
+# If image is provided, policy and labels are required
+if [[ -n "$IMAGE" && -z "$POLICY" ]]; then
+  echo "Error: 'policy' parameter is required when 'image' is provided"
+  exit 1
+fi
+
+if [[ -n "$IMAGE" && -z "$LABELS" ]]; then
+  echo "Error: 'labels' parameter is required when 'image' is provided"
+  exit 1
+fi
+
+# Validate numeric inputs
+if ! [[ "$INTERVAL" =~ ^[0-9]+$ ]] || [ "$INTERVAL" -le 0 ]; then
+  echo "Error: 'interval' must be a positive integer"
+  exit 1
+fi
+
+if ! [[ "$RETRIES" =~ ^[0-9]+$ ]] || [ "$RETRIES" -le 0 ]; then
+  echo "Error: 'retries' must be a positive integer"
+  exit 1
+fi
+
+# Create temporary directory for working files
+TEMP_DIR=$(mktemp -d)
+cd "$TEMP_DIR"
+
+# Export Cloudflare Access credentials if provided
+if [[ -n "$CF_CLIENT_ID" && -n "$CF_CLIENT_SECRET" ]]; then
+  export CF_ACCESS_CLIENT_ID="$CF_CLIENT_ID"
+  export CF_ACCESS_CLIENT_SECRET="$CF_CLIENT_SECRET"
+  echo "Cloudflare Access credentials configured"
+fi
+
+# Download gokakashi binary
+echo "Pulling gokakashi binary version: $GOKAKASHI_VERSION"
+if [[ "$GOKAKASHI_VERSION" == "latest" ]]; then
+  wget -q https://github.com/shinobistack/gokakashi/releases/latest/download/gokakashi-linux-amd64 -O gokakashi
+else
+  wget -q https://github.com/shinobistack/gokakashi/releases/download/$GOKAKASHI_VERSION/gokakashi-linux-amd64 -O gokakashi
+fi
+chmod +x gokakashi
+
+# Install Trivy
+echo "Installing Trivy..."
+wget -q https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh -O install_trivy.sh
+chmod +x install_trivy.sh
+./install_trivy.sh -b "$TEMP_DIR" v0.58.1
+rm install_trivy.sh
+chmod +x "$TEMP_DIR/trivy"
+export PATH="$TEMP_DIR:$PATH"
+
+echo "Trivy version:"
+./trivy --version
+
+# Trigger scan if no scan ID is provided
+if [[ -z "$SCAN_ID" ]]; then
+  echo "Triggering scan for image: $IMAGE with policy: $POLICY"
+  SCAN_OUTPUT=$(./gokakashi scan image --image="$IMAGE" --policy="$POLICY" --server="$SERVER" --token="$TOKEN" --labels="$LABELS" 2>&1)
+  echo "Scan output: $SCAN_OUTPUT"
+  
+  # Extract scan ID from output
+  SCAN_ID=$(echo "$SCAN_OUTPUT" | grep -o "Scan ID:[[:space:]]*[[:alnum:]-]*" | sed 's/Scan ID:[[:space:]]*//')
+  
+  if [[ -z "$SCAN_ID" ]]; then
+    echo "Error: Failed to extract Scan ID"
+    exit 1
+  fi
+  
+  echo "Extracted Scan ID: $SCAN_ID"
+fi
+
+echo "Starting gokakashi agent..."
+./gokakashi agent start --server="$SERVER" --token="$TOKEN" --labels="$LABELS" --single-strike
+
+SCAN_URL="$SERVER/api/v1/scans/$SCAN_ID"
+echo "Scan details available at: $SCAN_URL"
+
+# Poll scan status
+STATUS=""
+for ((attempt=1; attempt<=RETRIES; attempt++)); do
+  echo "Checking scan status (Attempt $attempt/$RETRIES)..."
+  
+  START_TIME=$(date +%s)
+  STATUS_OUTPUT=$(./gokakashi scan status --scanID="$SCAN_ID" --server="$SERVER" --token="$TOKEN" 2>&1)
+  echo "Full scan response: $STATUS_OUTPUT"
+  
+  # Extract status from output
+  STATUS=$(echo "$STATUS_OUTPUT" | grep -o "Scan status:[[:space:]]*[[:alnum:]-_]*" | sed 's/Scan status:[[:space:]]*//')
+  
+  if [[ -z "$STATUS" ]]; then
+    echo "Warning: Failed to parse scan status. Retrying..."
+    continue
+  fi
+  
+  if [[ "$STATUS" == "notify_pending" || "$STATUS" == "notify_in_progress" || "$STATUS" == "success" ]]; then
+    echo "Scan completed successfully with status: $STATUS"
+    break
+  elif [[ "$STATUS" == "error" ]]; then
+    echo "Error: Scan failed. Check logs for details."
+    exit 1
+  fi
+  
+  if [[ $attempt -lt $RETRIES ]]; then
+    ELAPSED=$(($(date +%s) - START_TIME))
+    SLEEP_TIME=$((INTERVAL - ELAPSED))
+    if [[ $SLEEP_TIME -gt 0 ]]; then
+      sleep $SLEEP_TIME
+    fi
+  fi
+done
+
+if [[ -z "$STATUS" || ("$STATUS" != "notify_pending" && "$STATUS" != "notify_in_progress" && "$STATUS" != "success") ]]; then
+  echo "Error: Scan failed to complete successfully. Last known status: $STATUS"
+  exit 1
+fi
+
+# Set output using Buildkite's metadata feature
+buildkite-agent meta-data set "gokakashi-report-url" "$SCAN_URL"
+echo "Report URL: $SCAN_URL"
+
+# Cleanup
+rm -rf "$TEMP_DIR"
