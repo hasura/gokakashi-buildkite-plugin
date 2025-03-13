@@ -42,7 +42,7 @@ Add the following to your `pipeline.yml`:
 steps:
   - label: ":shield: Scan Container Image"
     plugins:
-      - gokakashi/scan#v1.0.0:
+      - scriptonist/gokakashi-buildkite#v1.0.0:
           server: "https://your-gokakashi-server.com"
           token: "${GOKAKASHI_TOKEN}"
           image: "your-registry/your-image:latest"
@@ -56,7 +56,7 @@ steps:
 steps:
   - label: ":shield: Scan Container Image"
     plugins:
-      - gokakashi/scan#v1.0.0:
+      - scriptonist/gokakashi-buildkite#v1.0.0:
           server: "https://your-gokakashi-server.com"
           token: "${GOKAKASHI_TOKEN}"
           image: "your-registry/your-image:latest"
@@ -72,7 +72,7 @@ steps:
 steps:
   - label: ":shield: Check Existing Scan"
     plugins:
-      - gokakashi/scan#v1.0.0:
+      - scriptonist/gokakashi-buildkite#v1.0.0:
           server: "https://your-gokakashi-server.com"
           token: "${GOKAKASHI_TOKEN}"
           scan_id: "your-existing-scan-id"
