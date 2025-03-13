@@ -92,7 +92,7 @@ if [[ -z "$SCAN_ID" ]]; then
   echo "Scan output: $SCAN_OUTPUT"
   
   # Extract scan ID from output
-  SCAN_ID=$(echo "$SCAN_OUTPUT" | grep -o "Scan ID:[[:space:]]*[[:alnum:]-]*" | sed 's/Scan ID:[[:space:]]*//')
+  SCAN_ID=$(echo "$SCAN_OUTPUT" | grep -o "Scan ID: [a-f0-9-]\+" | sed 's/Scan ID: //')
   
   if [[ -z "$SCAN_ID" ]]; then
     echo "Error: Failed to extract Scan ID"
@@ -114,11 +114,23 @@ for ((attempt=1; attempt<=RETRIES; attempt++)); do
   echo "Checking scan status (Attempt $attempt/$RETRIES)..."
   
   START_TIME=$(date +%s)
-  STATUS_OUTPUT=$(./gokakashi scan status --scanID="$SCAN_ID" --server="$SERVER" --token="$TOKEN" 2>&1)
-  echo "Full scan response: $STATUS_OUTPUT"
+  set +e  # Temporarily disable exit on error
+  echo "Running status command..."
+  if ! STATUS_OUTPUT=$(./gokakashi scan status --scanID="$SCAN_ID" --server="$SERVER" --token="$TOKEN" 2>&1); then
+    echo "Error executing status command: $STATUS_OUTPUT"
+  fi
+  STATUS_EXIT_CODE=$?
+  echo "Status command exit code: $STATUS_EXIT_CODE"
+  echo "Full status output: $STATUS_OUTPUT"
+  set -e  # Re-enable exit on error
+
+  if [ $STATUS_EXIT_CODE -ne 0 ]; then
+    echo "Error: Status command failed"
+    continue
+  fi
   
   # Extract status from output
-  STATUS=$(echo "$STATUS_OUTPUT" | grep -o "Scan status:[[:space:]]*[[:alnum:]-_]*" | sed 's/Scan status:[[:space:]]*//')
+  STATUS=$(echo "$STATUS_OUTPUT" | grep -o "Scan status:[[:space:]]*[[:alnum:]_-]*" | sed 's/Scan status:[[:space:]]*//')
   
   if [[ -z "$STATUS" ]]; then
     echo "Warning: Failed to parse scan status. Retrying..."
