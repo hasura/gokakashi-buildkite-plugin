@@ -1,4 +1,4 @@
-name: gokakashi-buildkite
+name: gokakashi
 description: A Buildkite plugin to trigger and fetch image scans using goKakashi CLI
 author: "gokakashi team"
 requirements:
