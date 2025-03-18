@@ -14,6 +14,8 @@ INTERVAL="${BUILDKITE_PLUGIN_GOKAKASHI_INTERVAL:-10}"
 RETRIES="${BUILDKITE_PLUGIN_GOKAKASHI_RETRIES:-10}"
 GOKAKASHI_VERSION="${BUILDKITE_PLUGIN_GOKAKASHI_GOKAKASHI_VERSION:-latest}"
 
+env 
+
 # Validation for required parameters
 if [[ -z "$SERVER" ]]; then
   echo "Error: 'server' parameter is required"
