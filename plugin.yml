@@ -1,8 +1,10 @@
-name: GoKakashi Scan
+name: gokakashi-buildkite
 description: A Buildkite plugin to trigger and fetch image scans using goKakashi CLI
-author: "goKakashi Team"
+author: "gokakashi team"
 requirements:
-  - docker
+  - bash
+  - buildkite-plugin
+public: true
 configuration:
   properties:
     image:
