@@ -6,15 +6,26 @@ if [[ "${BUILDKITE_PLUGIN_GOKAKASHI_DEBUG:-off}" =~ ^(true|on|1)$ ]] ; then
   set -x
 fi
 
+# evaluate to check if the environment variable value is an expression.
+eval_env_variable() {
+  local value="${1:-}"
+
+  if [[ $value =~ \$\{?[a-zA-Z_]+\}? ]]; then
+    eval "echo $value"
+  else
+    echo "$value"
+  fi
+}
+
 # Get configuration from environment
-IMAGE="${BUILDKITE_PLUGIN_GOKAKASHI_IMAGE:-}"
-LABELS="${BUILDKITE_PLUGIN_GOKAKASHI_LABELS:-}"
-POLICY="${BUILDKITE_PLUGIN_GOKAKASHI_POLICY:-}"
-SERVER="${BUILDKITE_PLUGIN_GOKAKASHI_SERVER:-}"
-TOKEN="${BUILDKITE_PLUGIN_GOKAKASHI_TOKEN:-}"
-CF_CLIENT_ID="${BUILDKITE_PLUGIN_GOKAKASHI_CF_CLIENT_ID:-}"
-CF_CLIENT_SECRET="${BUILDKITE_PLUGIN_GOKAKASHI_CF_CLIENT_SECRET:-}"
-SCAN_ID="${BUILDKITE_PLUGIN_GOKAKASHI_SCAN_ID:-}"
+IMAGE=$(eval_env_variable "${BUILDKITE_PLUGIN_GOKAKASHI_IMAGE:-}")
+LABELS=$(eval_env_variable "${BUILDKITE_PLUGIN_GOKAKASHI_LABELS:-}")
+POLICY=$(eval_env_variable "${BUILDKITE_PLUGIN_GOKAKASHI_POLICY:-}")
+SERVER=$(eval_env_variable "${BUILDKITE_PLUGIN_GOKAKASHI_SERVER:-}")
+TOKEN=$(eval_env_variable "${BUILDKITE_PLUGIN_GOKAKASHI_TOKEN:-}")
+CF_CLIENT_ID=$(eval_env_variable "${BUILDKITE_PLUGIN_GOKAKASHI_CF_CLIENT_ID:-}")
+CF_CLIENT_SECRET=$(eval_env_variable "${BUILDKITE_PLUGIN_GOKAKASHI_CF_CLIENT_SECRET:-}")
+SCAN_ID=$(eval_env_variable "${BUILDKITE_PLUGIN_GOKAKASHI_SCAN_ID:-}")
 INTERVAL="${BUILDKITE_PLUGIN_GOKAKASHI_INTERVAL:-10}"
 RETRIES="${BUILDKITE_PLUGIN_GOKAKASHI_RETRIES:-10}"
 GOKAKASHI_VERSION="${BUILDKITE_PLUGIN_GOKAKASHI_GOKAKASHI_VERSION:-latest}"
@@ -28,8 +39,6 @@ fi
 if [[ -z "$TOKEN" ]]; then
   echo "Error: 'token' parameter is required"
   exit 1
-else
-  echo "TOKEN: $TOKEN"
 fi
 
 # Image or scan_id is required
