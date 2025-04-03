@@ -32,7 +32,8 @@ A Buildkite plugin that integrates container image vulnerability scans directly 
 - `cf_client_secret` (string): Cloudflare Access Client Secret
 - `interval` (integer): Interval in seconds to check the scan status (default: 10)
 - `retries` (integer): Number of retries before marking the scan as failed (default: 10)
-- `gokakashi_version` (string): The version of GoKakashi to use (e.g., 'v0.1.0', 'latest') (default: 'latest')
+- `gokakashi_version` (string): The version of GoKakashi to use (e.g., `v0.1.0`, `latest`) (default: `latest`)
+- `debug` (boolean): Enable `-x` flag to print verbose logs (default: `false`)
 
 ## Example Usage
 
@@ -42,7 +43,7 @@ Add the following to your `pipeline.yml`:
 steps:
   - label: ":shield: Scan Container Image"
     plugins:
-      - scriptonist/gokakashi-buildkite#v1.0.0:
+      - hasura/gokakashi#v0.1.0:
           server: "https://your-gokakashi-server.com"
           token: "${GOKAKASHI_TOKEN}"
           image: "your-registry/your-image:latest"
@@ -56,7 +57,7 @@ steps:
 steps:
   - label: ":shield: Scan Container Image"
     plugins:
-      - scriptonist/gokakashi-buildkite#v1.0.0:
+      - hasura/gokakashi#v0.1.0:
           server: "https://your-gokakashi-server.com"
           token: "${GOKAKASHI_TOKEN}"
           image: "your-registry/your-image:latest"
@@ -72,7 +73,7 @@ steps:
 steps:
   - label: ":shield: Check Existing Scan"
     plugins:
-      - scriptonist/gokakashi-buildkite#v1.0.0:
+      - hasura/gokakashi#v0.1.0:
           server: "https://your-gokakashi-server.com"
           token: "${GOKAKASHI_TOKEN}"
           scan_id: "your-existing-scan-id"
@@ -89,7 +90,7 @@ Ensure that you store sensitive information like API tokens and Cloudflare Acces
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the Apache 2.0 License.
 
 ## Support
 

@@ -1,6 +1,6 @@
 name: gokakashi
 description: A Buildkite plugin to trigger and fetch image scans using goKakashi CLI
-author: "gokakashi team"
+author: https://github.com/hasura
 requirements:
   - bash
   - buildkite-plugin
@@ -32,6 +32,9 @@ configuration:
     gokakashi_version:
       type: string
       default: "latest"
+    debug:
+      type: boolean
+      default: false
   required:
     - server
     - token
