@@ -1,7 +1,0 @@
-#!/usr/bin/env bash
-
-set -eo pipefail
-
-
-echo "--- :lock: Cleaning up temporary folder"
-rm -rf "${TEMP_DIR}"
