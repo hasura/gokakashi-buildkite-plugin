@@ -17,8 +17,6 @@ eval_env_variable() {
   fi
 }
 
-echo $(eval_env_variable '$(echo "test")')
-
 # Get configuration from environment
 IMAGE=$(eval_env_variable "${BUILDKITE_PLUGIN_GOKAKASHI_IMAGE:-}")
 LABELS=$(eval_env_variable "${BUILDKITE_PLUGIN_GOKAKASHI_LABELS:-}")
@@ -73,7 +71,7 @@ fi
 
 # Create temporary directory for working files
 TEMP_DIR=$(mktemp -d)
-cd "$TEMP_DIR"
+cd "$TEMP_DIR" || exit
 
 # Export Cloudflare Access credentials if provided
 if [[ -n "$CF_CLIENT_ID" && -n "$CF_CLIENT_SECRET" ]]; then
@@ -87,7 +85,7 @@ echo "Pulling gokakashi binary version: $GOKAKASHI_VERSION"
 if [[ "$GOKAKASHI_VERSION" == "latest" ]]; then
   wget -q https://github.com/shinobistack/gokakashi/releases/latest/download/gokakashi-linux-amd64 -O gokakashi
 else
-  wget -q https://github.com/shinobistack/gokakashi/releases/download/$GOKAKASHI_VERSION/gokakashi-linux-amd64 -O gokakashi
+  wget -q "https://github.com/shinobistack/gokakashi/releases/download/$GOKAKASHI_VERSION/gokakashi-linux-amd64" -O gokakashi
 fi
 chmod +x gokakashi
 
