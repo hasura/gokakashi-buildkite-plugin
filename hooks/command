@@ -10,16 +10,14 @@ fi
 eval_env_variable() {
   local value="${1:-}"
 
-  if [[ $value =~ \$\{?[a-zA-Z_]+\}? ]]; then
+  if [[ $value =~ \$\{?[a-zA-Z_]+\}? ]] || [[ $value =~ ^\$\(.+\)$ ]]; then
     eval "echo $value"
-  elif [[ $value =~ \$\(.+\) ]]; then
-    eval "$value"
   else
     echo "$value"
   fi
 }
 
-eval_env_variable '$(echo test)'
+echo $(eval_env_variable '$(echo "test")')
 
 # Get configuration from environment
 IMAGE=$(eval_env_variable "${BUILDKITE_PLUGIN_GOKAKASHI_IMAGE:-}")
