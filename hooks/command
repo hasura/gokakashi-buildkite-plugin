@@ -1,5 +1,5 @@
 #!/bin/bash
-set -euo pipefail
+set -uo pipefail
 
 # Get configuration from environment
 IMAGE="${BUILDKITE_PLUGIN_GOKAKASHI_IMAGE:-}"
@@ -13,8 +13,6 @@ SCAN_ID="${BUILDKITE_PLUGIN_GOKAKASHI_SCAN_ID:-}"
 INTERVAL="${BUILDKITE_PLUGIN_GOKAKASHI_INTERVAL:-10}"
 RETRIES="${BUILDKITE_PLUGIN_GOKAKASHI_RETRIES:-10}"
 GOKAKASHI_VERSION="${BUILDKITE_PLUGIN_GOKAKASHI_GOKAKASHI_VERSION:-latest}"
-
-env 
 
 # Validation for required parameters
 if [[ -z "$SERVER" ]]; then
@@ -56,8 +54,13 @@ if ! [[ "$RETRIES" =~ ^[0-9]+$ ]] || [ "$RETRIES" -le 0 ]; then
 fi
 
 # Create temporary directory for working files
-TEMP_DIR=$(mktemp -d)
+export TEMP_DIR=$(mktemp -d)
 cd "$TEMP_DIR"
+
+# Enable debug logs
+if [[ "${BUILDKITE_PLUGIN_GOKAKASHI_DEBUG:-off}" =~ ^(true|on|1)$ ]] ; then
+  set -x
+fi
 
 # Export Cloudflare Access credentials if provided
 if [[ -n "$CF_CLIENT_ID" && -n "$CF_CLIENT_SECRET" ]]; then
@@ -116,7 +119,6 @@ for ((attempt=1; attempt<=RETRIES; attempt++)); do
   echo "Checking scan status (Attempt $attempt/$RETRIES)..."
   
   START_TIME=$(date +%s)
-  set +e  # Temporarily disable exit on error
   echo "Running status command..."
   if ! STATUS_OUTPUT=$(./gokakashi scan status --scanID="$SCAN_ID" --server="$SERVER" --token="$TOKEN" 2>&1); then
     echo "Error executing status command: $STATUS_OUTPUT"
@@ -124,7 +126,6 @@ for ((attempt=1; attempt<=RETRIES; attempt++)); do
   STATUS_EXIT_CODE=$?
   echo "Status command exit code: $STATUS_EXIT_CODE"
   echo "Full status output: $STATUS_OUTPUT"
-  set -e  # Re-enable exit on error
 
   if [ $STATUS_EXIT_CODE -ne 0 ]; then
     echo "Error: Status command failed"
@@ -164,6 +165,3 @@ fi
 # Set output using Buildkite's metadata feature
 buildkite-agent meta-data set "gokakashi-report-url" "$SCAN_URL"
 echo "Report URL: $SCAN_URL"
-
-# Cleanup
-rm -rf "$TEMP_DIR"

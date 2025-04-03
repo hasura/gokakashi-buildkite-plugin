@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 services:
   plugin:
     build: .
@@ -15,3 +15,14 @@ services:
       - BUILDKITE_PLUGIN_GOKAKASHI_BUILDKITE_CF_CLIENT_ID
       - BUILDKITE_PLUGIN_GOKAKASHI_BUILDKITE_CF_CLIENT_SECRET
       - BUILDKITE_AGENT_META_DATA_PATH=/tmp/buildkite-agent/meta-data
+
+  lint:
+    image: buildkite/plugin-linter
+    command: ["--id", "hasura/gokakashi"]
+    volumes:
+      - .:/plugin:ro
+
+  tests:
+    image: buildkite/plugin-tester
+    volumes:
+      - .:/plugin:ro
