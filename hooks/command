@@ -10,7 +10,7 @@ fi
 eval_env_variable() {
   local value="${1:-}"
 
-  if [[ $value =~ \$\{?[a-zA-Z_]+\}? ]] || [[ $value =~ ^\$\(.+\)$ ]]; then
+  if [[ $value =~ \$\{?[a-zA-Z_]+\}? ]] || [[ $value =~ \$\(.+\) ]]; then
     eval "echo $value"
   else
     echo "$value"
