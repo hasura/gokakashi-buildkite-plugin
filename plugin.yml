@@ -21,6 +21,8 @@ configuration:
       type: string
     cf_client_secret:
       type: string
+    timeout:
+      type: string
     scan_id:
       type: string
     interval:
