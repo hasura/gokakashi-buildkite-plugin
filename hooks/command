@@ -26,6 +26,7 @@ TOKEN=$(eval_env_variable "${BUILDKITE_PLUGIN_GOKAKASHI_TOKEN:-}")
 CF_CLIENT_ID=$(eval_env_variable "${BUILDKITE_PLUGIN_GOKAKASHI_CF_CLIENT_ID:-}")
 CF_CLIENT_SECRET=$(eval_env_variable "${BUILDKITE_PLUGIN_GOKAKASHI_CF_CLIENT_SECRET:-}")
 SCAN_ID=$(eval_env_variable "${BUILDKITE_PLUGIN_GOKAKASHI_SCAN_ID:-}")
+TIMEOUT=$(eval_env_variable "${BUILDKITE_PLUGIN_GOKAKASHI_TIMEOUT:-}")
 INTERVAL="${BUILDKITE_PLUGIN_GOKAKASHI_INTERVAL:-10}"
 RETRIES="${BUILDKITE_PLUGIN_GOKAKASHI_RETRIES:-10}"
 GOKAKASHI_VERSION="${BUILDKITE_PLUGIN_GOKAKASHI_GOKAKASHI_VERSION:-latest}"
@@ -104,7 +105,16 @@ echo "Trivy version:"
 # Trigger scan if no scan ID is provided
 if [[ -z "$SCAN_ID" ]]; then
   echo "Triggering scan for image: $IMAGE with policy: $POLICY"
-  SCAN_OUTPUT=$(./gokakashi scan image --image="$IMAGE" --policy="$POLICY" --server="$SERVER" --token="$TOKEN" --labels="$LABELS" 2>&1)
+  # Build command with required arguments
+  SCAN_CMD="./gokakashi scan image --image=\"$IMAGE\" --policy=\"$POLICY\" --server=\"$SERVER\" --token=\"$TOKEN\" --labels=\"$LABELS\""
+  
+  # Add timeout if provided
+  if [[ -n "$TIMEOUT" ]]; then
+    SCAN_CMD+=" --timeout=\"$TIMEOUT\""
+  fi
+  
+  # Execute the command
+  SCAN_OUTPUT=$(eval "$SCAN_CMD" 2>&1)
   echo "Scan output: $SCAN_OUTPUT"
   
   # Extract scan ID from output
