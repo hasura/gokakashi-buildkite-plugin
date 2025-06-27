@@ -30,6 +30,7 @@ A Buildkite plugin that integrates container image vulnerability scans directly 
 - `labels` (string): Labels to add to the scan (required when `image` is provided)
 - `cf_client_id` (string): Cloudflare Access Client ID
 - `cf_client_secret` (string): Cloudflare Access Client Secret
+- `timeout` (string): Timeout for the scan operation (e.g., "300m" for 300 minutes)
 - `interval` (integer): Interval in seconds to check the scan status (default: 10)
 - `retries` (integer): Number of retries before marking the scan as failed (default: 10)
 - `gokakashi_version` (string): The version of GoKakashi to use (e.g., `v0.1.0`, `latest`) (default: `latest`)
@@ -49,6 +50,7 @@ steps:
           image: "your-registry/your-image:latest"
           policy: "default"
           labels: "buildkite,ci"
+          timeout: "30m"
 ```
 
 ### Using with Cloudflare Access
@@ -63,6 +65,7 @@ steps:
           image: "your-registry/your-image:latest"
           policy: "default"
           labels: "buildkite,ci"
+          timeout: "30m"
           cf_client_id: "${CF_CLIENT_ID}"
           cf_client_secret: "${CF_CLIENT_SECRET}"
 ```
